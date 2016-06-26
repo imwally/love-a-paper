@@ -37,6 +37,11 @@ func RandomInt(maxInt int) (int64, error) {
 
 func RandomReadme(dir string) (string, error) {
 	pwl := "papers-we-love"
+
+	if SkipDir(dir) {
+		return RandomReadme("/")
+	}
+
 	client := github.NewClient(nil)
 	fc, dc, _, err := client.Repositories.GetContents(pwl, pwl, dir, nil)
 	if err != nil {
