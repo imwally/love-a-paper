@@ -51,7 +51,7 @@ func RandomReadme(dir string) (string, error) {
 	if fc == nil {
 		randInt, err := RandomInt(len(dc))
 		if err != nil {
-			log.Println(err)
+			return "", err
 		}
 		randDir := dc[randInt]
 		randDirName := randDir.Name
@@ -62,7 +62,7 @@ func RandomReadme(dir string) (string, error) {
 
 	readme, err := fc.GetContent()
 	if err != nil {
-		log.Println(err)
+		return "", err
 	}
 
 	return readme, nil
