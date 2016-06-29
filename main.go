@@ -5,11 +5,21 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/go-github/github"
 	"github.com/imwally/love-a-paper/mdlinks"
 )
+
+type Readme struct {
+	Path    string
+	Content string
+}
+
+func IsPdf(name string) bool {
+	return strings.EqualFold(filepath.Ext(name), ".pdf")
+}
 
 func SkipDir(name string) bool {
 	prefixes := []string{
@@ -36,7 +46,7 @@ func RandomInt(maxInt int) (int64, error) {
 	return random.Int64(), nil
 }
 
-func RandomReadme(dir string) (string, error) {
+func RandomReadme(dir string) (*Readme, error) {
 	pwl := "papers-we-love"
 
 	if SkipDir(dir) {
@@ -46,14 +56,14 @@ func RandomReadme(dir string) (string, error) {
 	client := github.NewClient(nil)
 	fc, dc, resp, err := client.Repositories.GetContents(pwl, pwl, dir, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	log.Println(resp)
 
 	if fc == nil {
 		randInt, err := RandomInt(len(dc))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		randDir := dc[randInt]
 		randDirName := randDir.Name
@@ -62,12 +72,15 @@ func RandomReadme(dir string) (string, error) {
 		return RandomReadme(readmePath)
 	}
 
-	readme, err := fc.GetContent()
+	htmlurl := fc.HTMLURL
+	path := strings.Replace(*htmlurl, "README.md", "", -1)
+
+	content, err := fc.GetContent()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return readme, nil
+	return &Readme{path, content}, nil
 }
 
 func main() {
@@ -76,10 +89,13 @@ func main() {
 		log.Println(err)
 	}
 
-	links := mdlinks.Links([]byte(readme))
+	links := mdlinks.Links([]byte(readme.Content))
 
+	fmt.Println(readme.Path)
 	for _, link := range links {
-		fmt.Println(link.Name)
-		fmt.Println("\t", link.Location)
+		if IsPdf(link.Location) {
+			fmt.Println(link.Name)
+			fmt.Println("\t", link.Location)
+		}
 	}
 }
