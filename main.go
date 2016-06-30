@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -91,9 +92,16 @@ func main() {
 
 	links := mdlinks.Links([]byte(readme.Content))
 
-	fmt.Println(readme.Path)
 	for _, link := range links {
 		if IsPdf(link.Location) {
+			paperURL, err := url.Parse(link.Location)
+			if err != nil {
+				log.Println(err)
+			}
+			if !paperURL.IsAbs() {
+				absURL := strings.Join([]string{readme.Path, link.Location}, "")
+				link.Location = absURL
+			}
 			fmt.Println(link.Name)
 			fmt.Println("\t", link.Location)
 		}
