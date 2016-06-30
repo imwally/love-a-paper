@@ -57,9 +57,12 @@ func RandomReadme(dir string) (*Readme, error) {
 	client := github.NewClient(nil)
 	fc, dc, resp, err := client.Repositories.GetContents(pwl, pwl, dir, nil)
 	if err != nil {
-		return nil, err
+		if resp.Remaining < 1 {
+			return nil, err
+		} else {
+			return RandomReadme("/")
+		}
 	}
-	log.Println(resp)
 
 	if fc == nil {
 		randInt, err := RandomInt(len(dc))
@@ -84,26 +87,53 @@ func RandomReadme(dir string) (*Readme, error) {
 	return &Readme{path, content}, nil
 }
 
+func RandomLink(links []mdlinks.Link) (*mdlinks.Link, error) {
+	randInt, err := RandomInt(len(links))
+	if err != nil {
+		return nil, err
+	}
+	randLink := links[randInt]
+
+	return &randLink, nil
+}
+
+func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
+	temp := make([]mdlinks.Link, len(links))
+	for i, link := range links {
+		if link.Name == ":scroll:" {
+			link.Name = links[i+1].Name
+		}
+		temp[i] = link
+	}
+
+	return &temp
+}
+
 func main() {
 	readme, err := RandomReadme("/")
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
-	links := mdlinks.Links([]byte(readme.Content))
+	linksUnscrubbed := mdlinks.Links([]byte(readme.Content))
+	links := ScrubScrollNames(linksUnscrubbed)
 
-	for _, link := range links {
-		if IsPdf(link.Location) {
-			paperURL, err := url.Parse(link.Location)
-			if err != nil {
-				log.Println(err)
-			}
-			if !paperURL.IsAbs() {
-				absURL := strings.Join([]string{readme.Path, link.Location}, "")
-				link.Location = absURL
-			}
-			fmt.Println(link.Name)
-			fmt.Println("\t", link.Location)
+	link, err := RandomLink(*links)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if IsPdf(link.Location) {
+		paperURL, err := url.Parse(link.Location)
+		if err != nil {
+			log.Println(err)
 		}
+		if !paperURL.IsAbs() {
+			absURL := strings.Join([]string{readme.Path, link.Location}, "")
+			link.Location = absURL
+		}
+		fmt.Println(link.Name)
+		fmt.Println("\t", link.Location)
 	}
 }
