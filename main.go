@@ -18,7 +18,7 @@ type Readme struct {
 	Content string
 }
 
-func IsPdf(name string) bool {
+func IsPDF(name string) bool {
 	return strings.EqualFold(filepath.Ext(name), ".pdf")
 }
 
@@ -37,9 +37,8 @@ func SkipDir(name string) bool {
 	return false
 }
 
-func RandomInt(maxInt int) (int64, error) {
-	max := big.NewInt(int64(maxInt))
-	random, err := rand.Int(rand.Reader, max)
+func RandomInt(max int) (int64, error) {
+	random, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
 	if err != nil {
 		return 0, err
 	}
@@ -47,20 +46,18 @@ func RandomInt(maxInt int) (int64, error) {
 	return random.Int64(), nil
 }
 
-func RandomReadme(dir string) (*Readme, error) {
-	pwl := "papers-we-love"
-
+func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 	if SkipDir(dir) {
-		return RandomReadme("/")
+		return RandomGithubReadme(owner, repo, "/")
 	}
 
 	client := github.NewClient(nil)
-	fc, dc, resp, err := client.Repositories.GetContents(pwl, pwl, dir, nil)
+	fc, dc, resp, err := client.Repositories.GetContents(owner, repo, dir, nil)
 	if err != nil {
 		if resp.Remaining < 1 {
 			return nil, err
 		} else {
-			return RandomReadme("/")
+			return RandomGithubReadme(owner, repo, "/")
 		}
 	}
 
@@ -73,7 +70,7 @@ func RandomReadme(dir string) (*Readme, error) {
 		randDirName := randDir.Name
 
 		readmePath := strings.Join([]string{*randDirName, "README.md"}, "/")
-		return RandomReadme(readmePath)
+		return RandomGithubReadme(owner, repo, readmePath)
 	}
 
 	htmlurl := fc.HTMLURL
@@ -110,7 +107,7 @@ func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
 }
 
 func main() {
-	readme, err := RandomReadme("/")
+	readme, err := RandomGithubReadme("papers-we-love", "papers-we-love", "/")
 	if err != nil {
 		log.Println(err)
 		return
@@ -124,7 +121,7 @@ func main() {
 		log.Println(err)
 	}
 
-	if IsPdf(link.Location) {
+	if IsPDF(link.Location) {
 		paperURL, err := url.Parse(link.Location)
 		if err != nil {
 			log.Println(err)
