@@ -141,6 +141,7 @@ func main() {
 	paper, err := FindPaper("papers-we-love", "papers-we-love", "/")
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	fmt.Println(paper.Name)
