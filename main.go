@@ -46,6 +46,28 @@ func RandomInt(max int) (int64, error) {
 	return random.Int64(), nil
 }
 
+func RandomLink(links []mdlinks.Link) (*mdlinks.Link, error) {
+	randInt, err := RandomInt(len(links))
+	if err != nil {
+		return nil, err
+	}
+	randLink := links[randInt]
+
+	return &randLink, nil
+}
+
+func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
+	temp := make([]mdlinks.Link, len(links))
+	for i, link := range links {
+		if link.Name == ":scroll:" {
+			link.Name = links[i+1].Name
+		}
+		temp[i] = link
+	}
+
+	return &temp
+}
+
 func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 	if SkipDir(dir) {
 		return RandomGithubReadme(owner, repo, "/")
@@ -84,33 +106,10 @@ func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 	return &Readme{path, content}, nil
 }
 
-func RandomLink(links []mdlinks.Link) (*mdlinks.Link, error) {
-	randInt, err := RandomInt(len(links))
+func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
+	readme, err := RandomGithubReadme(owner, repo, path)
 	if err != nil {
 		return nil, err
-	}
-	randLink := links[randInt]
-
-	return &randLink, nil
-}
-
-func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
-	temp := make([]mdlinks.Link, len(links))
-	for i, link := range links {
-		if link.Name == ":scroll:" {
-			link.Name = links[i+1].Name
-		}
-		temp[i] = link
-	}
-
-	return &temp
-}
-
-func main() {
-	readme, err := RandomGithubReadme("papers-we-love", "papers-we-love", "/")
-	if err != nil {
-		log.Println(err)
-		return
 	}
 
 	linksUnscrubbed := mdlinks.Links([]byte(readme.Content))
@@ -118,19 +117,32 @@ func main() {
 
 	link, err := RandomLink(*links)
 	if err != nil {
+		return nil, err
+	}
+
+	if !IsPDF(link.Location) {
+		return FindPaper(owner, repo, path)
+	}
+
+	paperURL, err := url.Parse(link.Location)
+	if err != nil {
+		return nil, err
+	}
+
+	if !paperURL.IsAbs() {
+		absURL := strings.Join([]string{readme.Path, link.Location}, "")
+		link.Location = absURL
+	}
+
+	return link, nil
+}
+
+func main() {
+	paper, err := FindPaper("papers-we-love", "papers-we-love", "/")
+	if err != nil {
 		log.Println(err)
 	}
 
-	if IsPDF(link.Location) {
-		paperURL, err := url.Parse(link.Location)
-		if err != nil {
-			log.Println(err)
-		}
-		if !paperURL.IsAbs() {
-			absURL := strings.Join([]string{readme.Path, link.Location}, "")
-			link.Location = absURL
-		}
-		fmt.Println(link.Name)
-		fmt.Println("\t", link.Location)
-	}
+	fmt.Println(paper.Name)
+	fmt.Println(paper.Location)
 }
