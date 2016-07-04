@@ -91,11 +91,10 @@ func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 		// If the Github API rate limit has been hit return with the error.
 		if resp.Remaining < 1 {
 			return nil, err
-			// Otherwise a 404 (not a README.md file) or other HTTP error occured.
-			// Start again from the root directory.
-		} else {
-			return RandomGithubReadme(owner, repo, "/")
 		}
+		// Otherwise a 404 (not a README.md file) or other HTTP error occured.
+		// Start again from the root directory.
+		return RandomGithubReadme(owner, repo, "/")
 	}
 
 	// No README.md file has been found yet so check the current directoy for
