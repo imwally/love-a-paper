@@ -28,8 +28,8 @@ func IsPDF(path string) bool {
 // HasPrefix returns true if name starts with any string found in the slice
 // of prefixes.
 func HasPrefix(name string, prefixes []string) bool {
-	for _, skip := range prefixes {
-		if strings.HasPrefix(name, skip) {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(name, prefix) {
 			return true
 		}
 	}
