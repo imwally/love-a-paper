@@ -159,6 +159,9 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
 		link.Location = absURL
 	}
 
+	// Strip newlines from link names.
+	link.Name = strings.Replace(link.Name, "\n", "", -1)
+
 	return link, nil
 }
 
