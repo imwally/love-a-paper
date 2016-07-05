@@ -3,14 +3,19 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/big"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/github"
 	"github.com/imwally/love-a-paper/mdlinks"
+	"github.com/kurrik/oauth1a"
+	"github.com/kurrik/twittergo"
 )
 
 // Readme holds the path to and content of the README file found in a github
@@ -79,9 +84,11 @@ func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
 // within a Github repository. It will recursively try to find a README file
 // until either one is found or the Github API rate limit has been hit.
 func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
+	log.Printf("INFO: scanning %s\n", dir)
 	// Start again from the root directory if the current directory has any of
 	// the following prefixes.
 	if HasPrefix(dir, []string{".", "_"}) {
+		log.Printf("INFO: skpping %s\n", dir)
 		return RandomGithubReadme(owner, repo, "/")
 	}
 
@@ -94,8 +101,11 @@ func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 		}
 		// Otherwise a 404 (not a README.md file) or other HTTP error occured.
 		// Start again from the root directory.
+		log.Printf("FAILED: %s", err)
 		return RandomGithubReadme(owner, repo, "/")
 	}
+
+	log.Printf("GITHUB: %d of %d API requests remaining, reset at %s.", resp.Remaining, resp.Limit, resp.Reset)
 
 	// No README.md file has been found yet so check the current directoy for
 	// README.md.
@@ -145,6 +155,7 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
 	}
 
 	if !IsPDF(link.Location) {
+		log.Printf("RETRY: %s is not a paper", link.Location)
 		return FindPaper(owner, repo, path)
 	}
 
@@ -159,18 +170,72 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
 	}
 
 	// Strip newlines from link names.
-	link.Name = strings.Replace(link.Name, "\n", "", -1)
+	link.Name = strings.Replace(link.Name, "\n", " ", -1)
 
 	return link, nil
 }
 
-func main() {
-	paper, err := FindPaper("papers-we-love", "papers-we-love", "/")
+func TwitterLoadCredentials() (client *twittergo.Client, err error) {
+	credentials, err := ioutil.ReadFile("CREDENTIALS")
 	if err != nil {
-		log.Println(err)
 		return
 	}
+	lines := strings.Split(string(credentials), "\n")
+	config := &oauth1a.ClientConfig{
+		ConsumerKey:    lines[0],
+		ConsumerSecret: lines[1],
+	}
+	user := oauth1a.NewAuthorizedConfig(lines[2], lines[3])
+	client = twittergo.NewClient(config, user)
 
-	fmt.Println(paper.Name)
-	fmt.Println(paper.Location)
+	return
+}
+
+func Tweet(content string) error {
+	client, err := TwitterLoadCredentials()
+	if err != nil {
+		return err
+	}
+
+	data := url.Values{}
+	data.Set("status", fmt.Sprintf(content))
+	body := strings.NewReader(data.Encode())
+
+	req, err := http.NewRequest("POST", "/1.1/statuses/update.json", body)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.SendRequest(req)
+	if err != nil {
+		return err
+	}
+
+	tweet := &twittergo.Tweet{}
+	err = resp.Parse(tweet)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func main() {
+	for {
+		paper, err := FindPaper("papers-we-love", "papers-we-love", "/")
+		if err != nil {
+			log.Printf("ERROR: %s\n", err)
+		} else {
+			log.Printf("INFO: found paper: %s\n", paper.Location)
+
+			content := strings.Join([]string{paper.Name, paper.Location}, "\n")
+			err = Tweet(content)
+			if err != nil {
+				log.Printf("TWITTER: %s\n", err)
+			}
+		}
+
+		time.Sleep(120 * time.Second)
+	}
 }
