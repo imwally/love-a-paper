@@ -215,8 +215,8 @@ func main() {
 		} else {
 			log.Printf("INFO: found paper: %s\n", paper.Location)
 
-			content := strings.Join([]string{paper.Name, paper.Location}, "\n")
-			tweet, err := TwitterUpdateStatus(content)
+			status := strings.Join([]string{paper.Name, paper.Location}, "\n")
+			tweet, err := TwitterUpdateStatus(status)
 			if err != nil {
 				log.Printf("TWITTER: %s\n", err)
 			} else {
