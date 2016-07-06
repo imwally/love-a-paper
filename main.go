@@ -85,7 +85,7 @@ func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
 // until either one is found or the Github API rate limit has been hit.
 func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 	log.Printf("INFO: scanning %s\n", dir)
-	if HasPrefix(dir, []string{".", "_"}) {
+	if HasPrefix(dir, []string{".", "_", "CODE_OF_CONDUCT.md"}) {
 		log.Printf("INFO: skipping %s\n", dir)
 		return RandomGithubReadme(owner, repo, "/")
 	}
