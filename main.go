@@ -3,11 +3,11 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -164,50 +164,47 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
 	return link, nil
 }
 
+// TwitterLoadCredentials loads Twitter API tokens from environment variables.
 func TwitterLoadCredentials() (client *twittergo.Client, err error) {
-	credentials, err := ioutil.ReadFile("CREDENTIALS")
-	if err != nil {
-		return
-	}
-	lines := strings.Split(string(credentials), "\n")
 	config := &oauth1a.ClientConfig{
-		ConsumerKey:    lines[0],
-		ConsumerSecret: lines[1],
+		ConsumerKey:    os.Getenv("CONSUMER_KEY"),
+		ConsumerSecret: os.Getenv("CONSUMER_SECRET"),
 	}
-	user := oauth1a.NewAuthorizedConfig(lines[2], lines[3])
+	user := oauth1a.NewAuthorizedConfig(os.Getenv("API_KEY"), os.Getenv("API_SECRET"))
 	client = twittergo.NewClient(config, user)
 
 	return
 }
 
-func Tweet(content string) error {
+// TwitterUpdateStatus tweets a new status.
+func TwitterUpdateStatus(status string) (*twittergo.Tweet, error) {
 	client, err := TwitterLoadCredentials()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	data := url.Values{}
-	data.Set("status", fmt.Sprintf(content))
+	data.Set("status", fmt.Sprintf(status))
 	body := strings.NewReader(data.Encode())
 
 	req, err := http.NewRequest("POST", "/1.1/statuses/update.json", body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.SendRequest(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tweet := &twittergo.Tweet{}
 	err = resp.Parse(tweet)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return tweet, nil
 }
 
 func main() {
@@ -219,9 +216,11 @@ func main() {
 			log.Printf("INFO: found paper: %s\n", paper.Location)
 
 			content := strings.Join([]string{paper.Name, paper.Location}, "\n")
-			err = Tweet(content)
+			tweet, err := TwitterUpdateStatus(content)
 			if err != nil {
 				log.Printf("TWITTER: %s\n", err)
+			} else {
+				log.Printf("TWITTER: tweet successful: %s", tweet.IdStr())
 			}
 		}
 
