@@ -65,7 +65,7 @@ func RandomLink(links []mdlinks.Link) (*mdlinks.Link, error) {
 
 // ScrubScrollNames is a helper function that replaces any Link containing the
 // name ":scroll:" with the name of the Link found directly after it. Because
-// PWL self hosted papers are indicated by a scroll icon appended to the link,
+// PWL self hosted papers are indicated by a scroll icon prepended to the link,
 // the markdown parser assumes this is the name of the link. In most cases the
 // actual name is found immediately after the scroll icon.
 func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
@@ -85,8 +85,6 @@ func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
 // until either one is found or the Github API rate limit has been hit.
 func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 	log.Printf("INFO: scanning %s\n", dir)
-	// Start again from the root directory if the current directory has any of
-	// the following prefixes.
 	if HasPrefix(dir, []string{".", "_"}) {
 		log.Printf("INFO: skpping %s\n", dir)
 		return RandomGithubReadme(owner, repo, "/")
@@ -94,21 +92,15 @@ func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 
 	client := github.NewClient(nil)
 	fc, dc, resp, err := client.Repositories.GetContents(owner, repo, dir, nil)
+	log.Printf("GITHUB: %d of %d API requests remaining, reset at %s.", resp.Remaining, resp.Limit, resp.Reset)
 	if err != nil {
-		// If the Github API rate limit has been hit return with the error.
 		if resp.Remaining < 1 {
 			return nil, err
 		}
-		// Otherwise a 404 (not a README.md file) or other HTTP error occured.
-		// Start again from the root directory.
 		log.Printf("FAILED: %s", err)
 		return RandomGithubReadme(owner, repo, "/")
 	}
 
-	log.Printf("GITHUB: %d of %d API requests remaining, reset at %s.", resp.Remaining, resp.Limit, resp.Reset)
-
-	// No README.md file has been found yet so check the current directoy for
-	// README.md.
 	if fc == nil {
 		randInt, err := RandomInt(len(dc))
 		if err != nil {
@@ -121,22 +113,18 @@ func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 		return RandomGithubReadme(owner, repo, readmePath)
 	}
 
-	// Remember the path where the README.md file was found.
-	htmlurl := fc.HTMLURL
-	path := strings.Replace(*htmlurl, "README.md", "", -1)
-
-	// Extract content from the README.md file.
 	content, err := fc.GetContent()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Readme{path, content}, nil
+	path := fc.HTMLURL
+	return &Readme{*path, content}, nil
 }
 
 // FindPaper is a recursive function that uses RandomGithubReadme to find a
-// suitable README.md file containing a link to a paper. Currently a suitable
-// README.md file is one that contains a link to a PDF.
+// suitable README.md file. Currently a suitable README.md file is one that
+// contains a link to a PDF.
 //
 // NOTE: Maybe modify IsPDF() to check for other formats such as postscript
 // files and rename function to IsPaper().
@@ -169,7 +157,6 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
 		link.Location = absURL
 	}
 
-	// Strip newlines from link names.
 	link.Name = strings.Replace(link.Name, "\n", " ", -1)
 
 	return link, nil
