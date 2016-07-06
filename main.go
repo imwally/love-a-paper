@@ -86,7 +86,7 @@ func ScrubScrollNames(links []mdlinks.Link) *[]mdlinks.Link {
 func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 	log.Printf("INFO: scanning %s\n", dir)
 	if HasPrefix(dir, []string{".", "_"}) {
-		log.Printf("INFO: skpping %s\n", dir)
+		log.Printf("INFO: skipping %s\n", dir)
 		return RandomGithubReadme(owner, repo, "/")
 	}
 
@@ -113,13 +113,15 @@ func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 		return RandomGithubReadme(owner, repo, readmePath)
 	}
 
+	htmlurl := fc.HTMLURL
+	path := strings.Replace(*htmlurl, "README.md", "", -1)
+
 	content, err := fc.GetContent()
 	if err != nil {
 		return nil, err
 	}
 
-	path := fc.HTMLURL
-	return &Readme{*path, content}, nil
+	return &Readme{path, content}, nil
 }
 
 // FindPaper is a recursive function that uses RandomGithubReadme to find a
@@ -143,7 +145,7 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
 	}
 
 	if !IsPDF(link.Location) {
-		log.Printf("RETRY: %s is not a paper", link.Location)
+		log.Printf("INFO: %s is not a paper", link.Location)
 		return FindPaper(owner, repo, path)
 	}
 
