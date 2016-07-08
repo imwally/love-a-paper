@@ -1,1 +1,1 @@
-web: love-a-paper
+worker: love-a-paper
