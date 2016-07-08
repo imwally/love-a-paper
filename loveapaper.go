@@ -185,7 +185,7 @@ func TwitterUpdateStatus(status string) (*twittergo.Tweet, error) {
 	}
 
 	data := url.Values{}
-	data.Set("status", fmt.Sprintf(status))
+	data.Set("status", status)
 	body := strings.NewReader(data.Encode())
 
 	req, err := http.NewRequest("POST", "/1.1/statuses/update.json", body)
