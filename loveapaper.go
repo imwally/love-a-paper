@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"fmt"
 	"log"
 	"math/big"
 	mrand "math/rand"
