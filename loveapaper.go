@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	mrand "math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -224,6 +225,9 @@ func main() {
 			}
 		}
 
-		time.Sleep(120 * time.Second)
+		mrand.Seed(time.Now().Unix())
+		sleepTime := mrand.Intn(10-6) + 6
+		log.Printf("INFO: sleeping for %d hours ...", sleepTime)
+		time.Sleep(time.Duration(sleepTime) * time.Hour)
 	}
 }
