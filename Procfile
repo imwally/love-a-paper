@@ -1,1 +1,1 @@
-web: loveapaper
+web: love-a-paper
