@@ -78,10 +78,9 @@ func (l *LinkRenderer) DocumentFooter(out *bytes.Buffer)                        
 func Links(markdown []byte) []Link {
 	// Clear global links slice on each invocation.
 	links = nil
-	
+
 	l := NewLinkRenderer(0)
 	_ = blackfriday.Markdown(markdown, l, 0)
 
 	return links
 }
- 
