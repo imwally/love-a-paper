@@ -6,4 +6,4 @@ Icon from the [Hawcons](https://www.iconfinder.com/iconsets/hawcons) set by [Yan
 
 ### What
 
-A twitter bot that tweets randomly selected papers from the [Papers We Love](https://github.com/papers-we-love/papers-we-love) repository every 6 to 10 hours. You can follow me [@loveapaper](https://twitter.com/loveapaper). 
+A twitter bot that tweets randomly selected papers from the Papers We Love [repository](https://github.com/papers-we-love/papers-we-love). You can follow me [@loveapaper](https://twitter.com/loveapaper). 
