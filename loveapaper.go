@@ -113,8 +113,8 @@ func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 		return RandomGithubReadme(owner, repo, readmePath)
 	}
 
-	htmlurl := fc.HTMLURL
-	path := strings.Replace(*htmlurl, "README.md", "", -1)
+	HTMLURL := fc.HTMLURL
+	path := strings.Replace(*HTMLURL, "README.md", "", -1)
 
 	content, err := fc.GetContent()
 	if err != nil {
