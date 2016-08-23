@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"fmt"
 	"log"
 	"math/big"
 	mrand "math/rand"
@@ -130,18 +131,20 @@ func RandomGithubReadme(owner, repo, dir string) (*Readme, error) {
 //
 // NOTE: Maybe modify IsPDF() to check for other formats such as postscript
 // files and rename function to IsPaper().
-func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
+func FindPaper(owner, repo, path string) (*mdlinks.Link, string, error) {
 	readme, err := RandomGithubReadme(owner, repo, path)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
+
+	topic := strings.Replace(filepath.Base(readme.Path), "_", "", -1)
 
 	linksUnscrubbed := mdlinks.Links([]byte(readme.Content))
 	links := ScrubScrollNames(linksUnscrubbed)
 
 	link, err := RandomLink(*links)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if !IsPDF(link.Location) {
@@ -151,7 +154,7 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
 
 	paperURL, err := url.Parse(link.Location)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if !paperURL.IsAbs() {
@@ -161,7 +164,7 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, error) {
 
 	link.Name = strings.Replace(link.Name, "\n", " ", -1)
 
-	return link, nil
+	return link, topic, nil
 }
 
 // TwitterLoadCredentials loads Twitter API tokens from environment variables.
@@ -209,13 +212,13 @@ func TwitterUpdateStatus(status string) (*twittergo.Tweet, error) {
 
 func main() {
 	for {
-		paper, err := FindPaper("papers-we-love", "papers-we-love", "/")
+		paper, topic, err := FindPaper("papers-we-love", "papers-we-love", "/")
 		if err != nil {
 			log.Printf("ERROR: %s\n", err)
 		} else {
 			log.Printf("INFO: found paper: %s\n", paper.Location)
 
-			status := strings.Join([]string{paper.Name, paper.Location}, "\n")
+			status := strings.Join([]string{paper.Name, paper.Location, "#" + topic}, "\n")
 			tweet, err := TwitterUpdateStatus(status)
 			if err != nil {
 				log.Printf("TWITTER: %s\n", err)
