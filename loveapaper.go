@@ -159,7 +159,8 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, string, error) {
 		link.Location = absURL
 	}
 
-	topic := strings.Replace(filepath.Base(readme.Path), "_", "", -1)
+	topic := strings.Replace(filepath.Base(readme.Path), "_", " ", -1)
+	topic = strings.Replace(strings.Title(topic), " ", "", -1)
 	link.Name = strings.Replace(link.Name, "\n", " ", -1)
 
 	return link, topic, nil
