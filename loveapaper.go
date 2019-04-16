@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -159,7 +160,11 @@ func FindPaper(owner, repo, path string) (*mdlinks.Link, string, error) {
 		link.Location = absURL
 	}
 
-	topic := strings.Replace(filepath.Base(readme.Path), "_", " ", -1)
+	// Replace hyphens and underscores with spaces
+	re := regexp.MustCompile(`(-|_)`)
+	topic := re.ReplaceAllString(filepath.Base(readme.Path), " ")
+
+	// Capitalize topic words then strip spaces
 	topic = strings.Replace(strings.Title(topic), " ", "", -1)
 	link.Name = strings.Replace(link.Name, "\n", " ", -1)
 
