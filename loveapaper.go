@@ -232,9 +232,9 @@ func main() {
 		}
 
 		mrand.Seed(time.Now().Unix())
-		// Random integer between 6 and 10. Int(n) returns a random Int from 0
+		// Random integer between 24 and 48. Int(n) returns a random Int from 0
 		// to n exclusive.
-		sleepTime := mrand.Intn(5) + 6
+		sleepTime := mrand.Intn(25) + 24
 		log.Printf("INFO: sleeping for %d hours ...", sleepTime)
 		time.Sleep(time.Duration(sleepTime) * time.Hour)
 	}
